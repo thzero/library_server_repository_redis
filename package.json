@@ -1,0 +1,33 @@
+{
+  "name": "@thzero/library_server_repository_redis",
+  "type": "module",
+  "version": "0.17.0",
+  "version_major": 0,
+  "version_minor": 17,
+  "version_patch": 0,
+  "version_date": "12/23/2023",
+  "author": "thZero",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thzero/library_server_repository_redis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thzero/library_server_repository_redis/issues"
+  },
+  "homepage": "https://github.com/thzero/library_server_repository_redis#readme",
+  "engines": {
+    "node": ">=12.8.3"
+  },
+  "scripts": {
+    "cli-update": "library-cli --updateversion --pi",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+  },
+  "peerDependencies": {
+    "@thzero/library_common": "^0.17",
+    "@thzero/library_common_service": "^0.17",
+    "@thzero/library_server": "^0.17"
+  }
+}
