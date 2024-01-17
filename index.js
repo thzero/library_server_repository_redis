@@ -9,14 +9,17 @@ class RedisRepository extends Repository {
 	static _mutexClient = new asyncMutex();
 	static _mutexDb = new asyncMutex();
 	static _db = {};
-
-	async _getClient(correlationId) {
-		return await this._initializeClient(correlationId, this._initClientName());
+	
+	getClientName() {
+		return 'redis';
 	}
 
-	get _initClientName() {
-		const clientName = this._config.get('db.default');
-		return clientName;
+	async _getClient(correlationId, clientName) {
+		return await this._initializeClient(correlationId, clientName ?? this._initClientName());
+	}
+
+	_initClientName() {
+		return this._config.get('db.' + this.getClientName());
 	}
 
 	async _initializeClient(correlationId, clientName) {
@@ -30,10 +33,14 @@ class RedisRepository extends Repository {
 		const release = await RedisRepository._mutexClient.acquire();
 		try {
 			try {
-				const connectionInfo = this._config.get(`db.redis.connection`);
+				client = RedisRepository._client[clientName];
+				if (client)
+					return client;
+
+				const connectionInfo = this._config.get(`db.${this.getClientName()}.connection`);
 				this._enforceNotEmpty('RedisRepository', '_initializeClient', 'connectionInfo', connectionInfo, correlationId);
 				
-				client = await this.__initializeClientConnection(connectionInfo, clientName, config);
+				client = await this._initializeClientConnection(correlationId, connectionInfo, clientName, this._config);
 				this._enforceNotEmpty('RedisRepository', '_initializeClient', 'client', client, correlationId);
 
 				RedisRepository._client[clientName] = client;
@@ -51,7 +58,7 @@ class RedisRepository extends Repository {
 		return client;
 	}
 
-	async _initializeClientConnection(correlationId, clientName, config) {
+	async _initializeClientConnection(correlationId, connectionInfo, clientName, config) {
 		throw new NotImplementedError();
 	}
 }
