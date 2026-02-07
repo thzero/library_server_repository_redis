@@ -1,12 +1,14 @@
 {
   "name": "@thzero/library_server_repository_redis",
   "type": "module",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "version_major": 0,
   "version_minor": 18,
-  "version_patch": 4,
-  "version_date": "02/06/2026",
+  "version_patch": 5,
+  "version_date": "02/07/2026",
   "author": "thZero",
+  "author_url": "https://www.thzero.com",
+  "copyright": "2020-2026",
   "license": "MIT",
   "repository": {
     "type": "git",
