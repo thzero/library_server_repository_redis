@@ -1,11 +1,11 @@
 {
   "name": "@thzero/library_server_repository_redis",
   "type": "module",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "version_major": 0,
   "version_minor": 18,
-  "version_patch": 6,
-  "version_date": "02/07/2026",
+  "version_patch": 7,
+  "version_date": "05/21/2026",
   "author": "thZero",
   "author_url": "https://www.thzero.com",
   "copyright": "2020-2026",
@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/thzero/library_server_repository_redis#readme",
   "engines": {
-    "node": ">=12.8.3"
+    "node": ">=22"
   },
   "scripts": {
     "cli-update": "library-cli --updateversion --pi",
