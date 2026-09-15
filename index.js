@@ -19,11 +19,14 @@ class RedisRepository extends Repository {
 	}
 
 	_initClientName() {
-		return this._config.get('db.' + this.getClientName());
+		// The client name is only ever a cache key and a label; the connection itself
+		// is read from db.<name>.connection below. This used to return the whole
+		// db.<name> config block, which stringified to '[object Object]' as the key.
+		return this.getClientName();
 	}
 
 	async _initializeClient(correlationId, clientName) {
-		this._enforceNotEmpty('RedisRepository', '_initializeClient', 'clientName', clientName, correlationId);
+		this._enforceNotEmpty('RedisRepository', '_initializeClient', clientName, 'clientName', correlationId);
 
 		let client = RedisRepository._client[clientName];
 		if (client)
@@ -32,24 +35,19 @@ class RedisRepository extends Repository {
 		// const release = await this._mutexClient.acquire();
 		const release = await RedisRepository._mutexClient.acquire();
 		try {
-			try {
-				client = RedisRepository._client[clientName];
-				if (client)
-					return client;
+			client = RedisRepository._client[clientName];
+			if (client)
+				return client;
 
-				const connectionInfo = this._config.get(`db.${this.getClientName()}.connection`);
-				this._enforceNotEmpty('RedisRepository', '_initializeClient', 'connectionInfo', connectionInfo, correlationId);
-				
-				client = await this._initializeClientConnection(correlationId, connectionInfo, clientName, this._config);
-				this._enforceNotEmpty('RedisRepository', '_initializeClient', 'client', client, correlationId);
+			const connectionInfo = this._config.get(`db.${this.getClientName()}.connection`);
+			this._enforceNotEmpty('RedisRepository', '_initializeClient', connectionInfo, 'connectionInfo', correlationId);
+			
+			client = await this._initializeClientConnection(correlationId, connectionInfo, clientName, this._config);
+			this._enforceNotEmpty('RedisRepository', '_initializeClient', client, 'client', correlationId);
 
-				RedisRepository._client[clientName] = client;
+			RedisRepository._client[clientName] = client;
 
-				this._enforceNotNull('RedisRepository', '_initializeClient', 'client', client, correlationId);
-			}
-			catch (err) {
-				throw err;
-			}
+			this._enforceNotNull('RedisRepository', '_initializeClient', client, 'client', correlationId);
 		}
 		finally {
 			release();
