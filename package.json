@@ -1,11 +1,11 @@
 {
   "name": "@thzero/library_server_repository_redis",
   "type": "module",
-  "version": "0.18.7",
+  "version": "0.19.0",
   "version_major": 0,
-  "version_minor": 18,
-  "version_patch": 7,
-  "version_date": "05/21/2026",
+  "version_minor": 19,
+  "version_patch": 0,
+  "version_date": "09/14/2026",
   "author": "thZero",
   "author_url": "https://www.thzero.com",
   "copyright": "2020-2026",
@@ -28,9 +28,9 @@
     "lint:fix": "eslint . --fix"
   },
   "peerDependencies": {
-    "@thzero/library_common": "^0.18",
-    "@thzero/library_common_service": "^0.18",
-    "@thzero/library_server": "^0.18"
+    "@thzero/library_common": "^0.19",
+    "@thzero/library_common_service": "^0.19",
+    "@thzero/library_server": "^0.19"
   },
   "devDependencies": {
     "eslint": "^9.39.5"
