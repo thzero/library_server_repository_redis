@@ -46,6 +46,45 @@ npm install @thzero/library_server_repository_redis
 
 Clients are cached in a **static** map keyed by client name, so every repository instance in the process shares one connection per name. Opening is guarded by a static mutex, so concurrent first calls open exactly one.
 
+### Driver primitives
+
+Everything below is built on two methods a driver subclass implements, so a driver binding gets streams and locks without writing them.
+
+| Member | Purpose |
+|---|---|
+| `_command(client, command, ...args)` | **Abstract.** Sends one command (`'XADD'`, `'SET'`, ...) and resolves to its reply in the RESP2 shape (arrays, not maps), whatever protocol the connection speaks. |
+| `_transaction(client, commands)` | **Abstract.** Sends `[[command, ...args], ...]` in one `MULTI`/`EXEC`; resolves to the replies in order, or rejects with the first command's error. |
+| `_execute(correlationId, clientName, command, ...args)` | `_command` on the client `clientName` (`null` for the default). |
+| `_ping(correlationId, clientName)` | `PING`. |
+
+### Streams
+
+Every method takes `(correlationId, clientName, ...)`; `clientName` picks the connection (`null` for the default). A blocking read (`blockMs`) holds its connection until it's answered, so give it a client name of its own and send everything else through another. Entries come back as `{ id, fields }`, `fields` an object of the entry's values.
+
+| Member | Purpose |
+|---|---|
+| `_streamAdd(correlationId, clientName, stream, fields, options)` | Adds an entry (`fields` an object or a flat `[name, value, ...]` array); resolves to its id. `options.maxLength` or `options.minId` trims as it adds, approximately unless `options.approximate` is `false`. |
+| `_streamAddMany(correlationId, clientName, stream, entries, options)` | Adds several entries together, in order, in one transaction; resolves to their ids. |
+| `_streamTrim(correlationId, clientName, stream, options)` | Trims by `maxLength` or `minId`; resolves to how many were removed. |
+| `_streamLastId(correlationId, clientName, stream)` | The newest entry's id, or `'0-0'`. |
+| `_streamRead(correlationId, clientName, stream, afterId, options)` | Up to `options.count` (100) entries after `afterId`, waiting up to `options.blockMs` when given. |
+| `_streamGroupEnsure(correlationId, clientName, stream, group, startId)` | Makes the consumer group (and the stream), reading from `startId` (`'$'` by default); resolves to `false` when it already exists. |
+| `_streamReadGroup(correlationId, clientName, stream, group, consumer, options)` | Up to `options.count` (10) new entries for the consumer, waiting up to `options.blockMs` when given; `options.id` reads its own pending entries instead. |
+| `_streamClaimIdle(correlationId, clientName, stream, group, consumer, idleMs, options)` | Takes over entries pending longer than `idleMs` (`XAUTOCLAIM`), leaving out ones deleted meanwhile. |
+| `_streamAck(correlationId, clientName, stream, group, ids)` | Acknowledges one id or an array of them. |
+| `_streamDeliveries(correlationId, clientName, stream, group, id)` | How many times a pending entry has been delivered; `0` when it isn't pending. |
+| `_streamConsumersPrune(correlationId, clientName, stream, group, idleMs)` | Removes consumers with nothing pending, idle longer than `idleMs` (each stopped process leaves one behind); resolves to their names. |
+
+### Locks
+
+A key holding a random token, with an expiry, so a holder that dies can't keep it. Only the token's holder can extend or release it, so a holder whose lock expired can't touch the next holder's.
+
+| Member | Purpose |
+|---|---|
+| `_lockAcquire(correlationId, clientName, key, ttlMs)` | Resolves to the token, or `null` when someone else holds the lock. |
+| `_lockExtend(correlationId, clientName, key, token, ttlMs)` | Resets the expiry if the lock still holds `token`; `false` when it doesn't. |
+| `_lockRelease(correlationId, clientName, key, token)` | Deletes the lock if it still holds `token`; `false` when it doesn't. |
+
 ## Configuration
 
 The connection block is read from `db.<getClientName()>.connection` and passed verbatim to the subclass — this package never interprets it, so its shape is whatever your driver accepts.
@@ -89,6 +128,25 @@ class RegistryRepository extends BaseRedisRepository {
 
         const client = await this._getClient(correlationId);
         await client.publish(correlationId, channel, JSON.stringify(message));
+    }
+}
+```
+
+A repository over a stream, read by a consumer group on a connection of its own:
+
+```js
+class JobsRepository extends BaseRedisRepository {
+    async add(correlationId, job) {
+        return await this._streamAdd(correlationId, null, 'jobs', { payload: JSON.stringify(job) }, { maxLength: 100000 });
+    }
+
+    async next(correlationId, consumer) {
+        await this._streamGroupEnsure(correlationId, null, 'jobs', 'workers');
+        return await this._streamReadGroup(correlationId, 'jobsReader', 'jobs', 'workers', consumer, { blockMs: 5000 });
+    }
+
+    async done(correlationId, ids) {
+        await this._streamAck(correlationId, null, 'jobs', 'workers', ids);
     }
 }
 ```
