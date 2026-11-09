@@ -1,11 +1,11 @@
 {
   "name": "@thzero/library_server_repository_redis",
   "type": "module",
-  "version": "0.19.5",
+  "version": "0.19.6",
   "version_major": 0,
   "version_minor": 19,
-  "version_patch": 5,
-  "version_date": "10/18/2026",
+  "version_patch": 6,
+  "version_date": "11/09/2026",
   "author": "thZero",
   "author_url": "https://www.thzero.com",
   "copyright": "2020-2026",
@@ -33,6 +33,6 @@
     "@thzero/library_server": "^0.19"
   },
   "devDependencies": {
-    "eslint": "^10.12.0"
+    "eslint": "^10.14.0"
   }
 }
